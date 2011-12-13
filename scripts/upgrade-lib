@@ -1,0 +1,53 @@
+#!/bin/bash
+cd `dirname "$0"`
+cd ..
+
+if [ "$1" = "--pretend" ]; then
+  PRETEND=1
+  echo "--pretend given, so not actually doing anything."
+  shift
+fi
+
+OLD_JAR_NAME="$1"
+NEW_JAR_PATH="$2"
+NEW_JAR_NAME=`basename "$NEW_JAR_PATH"`
+
+if [ ! -f "$NEW_JAR_PATH" ]; then
+  echo "Replaces a given JAR library in each project."
+  echo
+  echo "Usage: $0 [--pretend] whatever-1.0.jar path/to/new/whatever-1.2.jar"
+  echo
+  echo "Options:"
+  echo "  --pretend    Don't actually change any files but show what would be done"
+  echo
+  exit 1
+fi
+
+JARS_TO_REPLACE=`find . | grep "$OLD_JAR_NAME"`
+
+if [ -z "$JARS_TO_REPLACE" ]; then
+  echo "$OLD_JAR_NAME not found anywhere. Doing nothing."
+  exit 0
+fi
+
+for dest in $JARS_TO_REPLACE; do
+  if [ ! "$dest" -ef "$NEW_JAR_PATH" ]; then
+    echo "Replacing $dest with $NEW_JAR_PATH"
+    JAR_DIR=`dirname "$dest"`
+    [ $PRETEND ] || rm -f "$dest"
+    [ $PRETEND ] || cp -f "$NEW_JAR_PATH" "$JAR_DIR"
+    
+    if [ "$OLD_JAR_NAME" != "$NEW_JAR_NAME" ]; then
+      PROJECT_FILE="`dirname "$dest"`/../nbproject/project.properties"
+      if [ -f "$PROJECT_FILE" ]; then
+        echo "Found NB project file at $PROJECT_FILE. Replacing file references."
+        [ $PRETEND ] || (
+          sed --in-place -e "s/$OLD_JAR_NAME/$NEW_JAR_NAME/g" $PROJECT_FILE
+        )
+      else
+        echo "NB project file not found for this replacement."
+      fi
+    fi
+  fi
+done
+
