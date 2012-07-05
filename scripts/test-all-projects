@@ -1,0 +1,59 @@
+#!/bin/bash
+
+usage() {
+    echo "Usage: scripts/test-all-projects [options] <logfile>"
+    echo
+    echo "Finds all Java projects in the current directory and runs their tests."
+    echo "Produces a lot of output on the console, but a short log file."
+    echo
+    echo "Options:"
+    echo "  -h, --help       This."
+    echo "  -s, --stop       Stop on first failure."
+    echo
+    exit
+}
+
+while [ $# -gt 0 ]; do
+    ARG=$1
+    shift
+    case "$ARG" in
+    -h|--help)
+        usage
+    ;;
+    -s|--stop)
+        STOP=1
+    ;;
+    *)
+        LOGFILE="$ARG"
+    ;;
+    esac
+done
+
+if [ -z "$LOGFILE" ]; then
+    usage
+fi
+
+date > $LOGFILE
+
+for i in `find -name "build.xml" | sort`; do
+    DIR=`dirname "$i"`
+    echo "=== $DIR ==="
+    cd "$DIR"
+    
+    if ant test; then
+        echo "OK $DIR" >> "$LOGFILE"
+        ant clean
+    else
+        echo "FAIL $DIR" >> "$LOGFILE"
+        if [ -n "$STOP" ]; then
+            echo "STOP" >> "$LOGFILE"
+            echo
+            echo "STOPPED ON FAILURE: $DIR"
+            echo
+            exit 1
+        fi
+    fi
+    
+    cd -
+done
+
