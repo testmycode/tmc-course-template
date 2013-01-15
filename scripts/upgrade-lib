@@ -42,7 +42,7 @@ for dest in $JARS_TO_REPLACE; do
       if [ -f "$PROJECT_FILE" ]; then
         echo "Found NB project file at $PROJECT_FILE. Replacing file references."
         [ $PRETEND ] || (
-          sed --in-place -e "s/$OLD_JAR_NAME/$NEW_JAR_NAME/g" $PROJECT_FILE
+          sed -i -e "s/$OLD_JAR_NAME/$NEW_JAR_NAME/g" $PROJECT_FILE
         )
       else
         echo "NB project file not found for this replacement."
